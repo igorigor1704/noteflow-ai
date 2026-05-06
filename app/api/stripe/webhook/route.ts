@@ -1,34 +1,21 @@
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
-
-import Stripe from "stripe";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { getStripe } from "../../../lib/stripe/stripe";
 
-function getStripe() {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-  if (!secretKey) {
-    throw new Error("Brak STRIPE_SECRET_KEY w zmiennych środowiskowych.");
-  }
-
-  return new Stripe(secretKey);
-}
-
-function getWebhookSecret() {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  if (!webhookSecret) {
-    throw new Error("Brak STRIPE_WEBHOOK_SECRET w zmiennych środowiskowych.");
-  }
-
-  return webhookSecret;
-}
-
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     const stripe = getStripe();
-    const webhookSecret = getWebhookSecret();
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      return NextResponse.json(
+        { error: "Brak STRIPE_WEBHOOK_SECRET." },
+        { status: 500 }
+      );
+    }
 
     const body = await req.text();
     const signature = (await headers()).get("stripe-signature");
@@ -58,7 +45,7 @@ export async function POST(req) {
 
     switch (event.type) {
       case "checkout.session.completed": {
-        const session = event.data.object;
+        const session = event.data.object as any;
 
         console.log("[STRIPE WEBHOOK] checkout.session.completed", {
           id: session.id,
@@ -74,7 +61,7 @@ export async function POST(req) {
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
-        const subscription = event.data.object;
+        const subscription = event.data.object as any;
 
         console.log(`[STRIPE WEBHOOK] ${event.type}`, {
           id: subscription.id,
@@ -87,9 +74,10 @@ export async function POST(req) {
         break;
       }
 
+      case "invoice.payment_succeeded":
       case "invoice.paid":
       case "invoice.payment_failed": {
-        const invoice = event.data.object;
+        const invoice = event.data.object as any;
 
         console.log(`[STRIPE WEBHOOK] ${event.type}`, {
           id: invoice.id,
@@ -112,8 +100,7 @@ export async function POST(req) {
 
     return NextResponse.json(
       {
-        error:
-          err instanceof Error ? err.message : "Webhook error",
+        error: err instanceof Error ? err.message : "Webhook error",
       },
       { status: 500 }
     );

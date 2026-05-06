@@ -79,25 +79,24 @@ function InfoCard({
 export default function PricingPage() {
   async function handleCheckout() {
     try {
-      const res = await fetch("/api/checkout", {
+      const response = await fetch("/api/checkout", {
         method: "POST",
       });
 
-      const data = await res.json();
+      const data = (await response.json()) as {
+        url?: string;
+        error?: string;
+      };
 
-      if (!res.ok) {
-        alert(data.error || "Nie udało się uruchomić płatności.");
-        return;
-      }
-
-      if (!data.url) {
-        alert("Stripe nie zwrócił linku do płatności.");
+      if (!response.ok || !data.url) {
+        alert(data.error || "Nie udało się uruchomić Stripe Checkout.");
         return;
       }
 
       window.location.href = data.url;
-    } catch {
-      alert("Coś poszło nie tak przy uruchamianiu płatności.");
+    } catch (error) {
+      console.error("[CHECKOUT CLIENT ERROR]", error);
+      alert("Błąd połączenia ze Stripe.");
     }
   }
 
