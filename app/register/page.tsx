@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn, Sparkles } from "lucide-react";
+import { UserPlus, Sparkles } from "lucide-react";
 import { createClient } from "../lib/supabase/client";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const supabase = createClient();
 
@@ -44,12 +44,12 @@ export default function LoginPage() {
     );
   }
 
-  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  async function handleRegister(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -63,7 +63,8 @@ export default function LoginPage() {
         await ensureUserRows(data.user.id, data.user.email || email);
       }
 
-      router.push("/dashboard");
+      alert("Konto utworzone. Teraz możesz się zalogować.");
+      router.push("/login");
       router.refresh();
     } finally {
       setLoading(false);
@@ -82,40 +83,40 @@ export default function LoginPage() {
               </div>
 
               <h1 className="text-4xl font-black tracking-tight text-slate-950 dark:text-slate-100">
-                Zaloguj się do aplikacji
+                Utwórz konto
               </h1>
 
               <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-                Zaloguj się, żeby korzystać z własnego panelu nauki,
-                zapisywać materiały i później podpiąć plan PRO do konkretnego
-                użytkownika.
+                Konto jest potrzebne, żeby NoteFlow AI mogło działać jak
+                prawdziwy SaaS: zapis analiz, statystyki, historia materiałów i
+                później plan PRO przypisany do użytkownika.
               </p>
 
               <div className="mt-8 grid gap-4">
                 <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Konto
+                    Profil
                   </p>
                   <p className="mt-2 text-base font-bold text-slate-950 dark:text-slate-100">
-                    Jeden użytkownik = własne dane i własny plan
+                    Startuje jako plan free
                   </p>
                 </div>
 
                 <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Supabase
+                    Statystyki
                   </p>
                   <p className="mt-2 text-base font-bold text-slate-950 dark:text-slate-100">
-                    Profil i statystyki tworzą się automatycznie
+                    Tworzą się automatycznie w Supabase
                   </p>
                 </div>
 
                 <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Stripe
+                    Następny etap
                   </p>
                   <p className="mt-2 text-base font-bold text-slate-950 dark:text-slate-100">
-                    Następnie podepniemy PRO do konta w bazie
+                    Zapisywanie analiz do konta użytkownika
                   </p>
                 </div>
               </div>
@@ -123,19 +124,19 @@ export default function LoginPage() {
 
             <div className="p-8">
               <form
-                onSubmit={handleLogin}
+                onSubmit={handleRegister}
                 className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-950"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Login
+                  Register
                 </p>
 
                 <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-100">
-                  Wejdź do swojego konta
+                  Załóż konto
                 </h2>
 
                 <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  Użyj e-maila i hasła utworzonego podczas rejestracji.
+                  Po rejestracji utworzymy profil i statystyki w Supabase.
                 </p>
 
                 <div className="mt-6 space-y-4">
@@ -174,17 +175,17 @@ export default function LoginPage() {
                   disabled={loading}
                   className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950"
                 >
-                  <LogIn className="h-4 w-4" />
-                  {loading ? "Logowanie..." : "Zaloguj się"}
+                  <UserPlus className="h-4 w-4" />
+                  {loading ? "Tworzenie konta..." : "Utwórz konto"}
                 </button>
 
                 <p className="mt-5 text-center text-sm text-slate-600 dark:text-slate-300">
-                  Nie masz konta?{" "}
+                  Masz już konto?{" "}
                   <Link
-                    href="/register"
+                    href="/login"
                     className="font-bold text-slate-950 underline-offset-4 hover:underline dark:text-white"
                   >
-                    Zarejestruj się
+                    Zaloguj się
                   </Link>
                 </p>
 
