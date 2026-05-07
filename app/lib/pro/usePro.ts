@@ -138,7 +138,10 @@ export function usePro() {
                 enablePro(rememberedSessionId);
               }
             } catch (error) {
-              console.error("[usePro] Stripe verify failed, enabling after success redirect", error);
+              console.error(
+                "[usePro] verify failed after Stripe redirect, enabling local Pro",
+                error
+              );
 
               if (!cancelled) {
                 enablePro(rememberedSessionId);

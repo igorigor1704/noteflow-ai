@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   ArrowRight,
   BookOpen,
+  Check,
+  Crown,
   FolderKanban,
   LayoutGrid,
   Library,
@@ -12,6 +14,7 @@ import {
   Star,
   Zap,
 } from "lucide-react";
+import { usePro } from "../../lib/pro/usePro";
 
 const navItems = [
   {
@@ -35,13 +38,20 @@ const navItems = [
   {
     href: "/pricing",
     label: "Pricing",
-    description: "Plan FREE i funkcje PRO",
+    description: "Plan i płatności",
     icon: Sparkles,
   },
 ];
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
+  const { isPro, hydrated, syncing } = usePro();
+
+  const planLabel = hydrated && isPro ? "Plan PRO aktywny" : "Plan FREE";
+  const planDescription =
+    hydrated && isPro
+      ? "Masz aktywne funkcje premium"
+      : "Plan FREE i funkcje PRO";
 
   return (
     <aside className="space-y-5">
@@ -59,6 +69,30 @@ export default function DashboardSidebar() {
           <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
             Czysty, prosty panel do nauki bez chaosu i bez przeładowania.
           </p>
+
+          <div
+            className={`mt-4 rounded-[22px] border px-4 py-3 ${
+              hydrated && isPro
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+                : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {hydrated && isPro ? (
+                <Crown className="h-4 w-4" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+
+              <p className="text-xs font-black uppercase tracking-[0.18em]">
+                {syncing ? "Sprawdzanie planu..." : planLabel}
+              </p>
+            </div>
+
+            <p className="mt-1 text-xs leading-5 opacity-80">
+              {syncing ? "Synchronizuję status po płatności Stripe." : planDescription}
+            </p>
+          </div>
         </div>
 
         <nav className="p-4">
@@ -68,6 +102,9 @@ export default function DashboardSidebar() {
               const isActive =
                 pathname === item.href ||
                 (item.href !== "/dashboard" && pathname?.startsWith(item.href));
+
+              const description =
+                item.href === "/pricing" ? planDescription : item.description;
 
               return (
                 <Link
@@ -108,7 +145,7 @@ export default function DashboardSidebar() {
                           : "text-slate-500 dark:text-slate-400"
                       }`}
                     >
-                      {item.description}
+                      {description}
                     </p>
                   </div>
                 </Link>
@@ -164,26 +201,39 @@ export default function DashboardSidebar() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.24)] dark:border-slate-700">
+      <section
+        className={`overflow-hidden rounded-[30px] border p-5 shadow-[0_20px_60px_rgba(15,23,42,0.24)] ${
+          hydrated && isPro
+            ? "border-emerald-300 bg-emerald-950 text-white dark:border-emerald-500"
+            : "border-slate-200 bg-slate-950 text-white dark:border-slate-700"
+        }`}
+      >
         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">
-          <Star className="h-3.5 w-3.5" />
-          Premium
+          {hydrated && isPro ? (
+            <Check className="h-3.5 w-3.5" />
+          ) : (
+            <Star className="h-3.5 w-3.5" />
+          )}
+          {hydrated && isPro ? "Pro active" : "Premium"}
         </div>
 
         <h3 className="mt-4 text-2xl font-black tracking-tight">
-          Zrób z tego prawdziwy study SaaS
+          {hydrated && isPro
+            ? "Masz aktywny plan Pro"
+            : "Zrób z tego prawdziwy study SaaS"}
         </h3>
 
         <p className="mt-3 text-sm leading-7 text-white/75">
-          Oral exam mode, mocniejszy workflow i bardziej premium feeling całej
-          aplikacji.
+          {hydrated && isPro
+            ? "Funkcje premium są odblokowane w tej przeglądarce po płatności Stripe."
+            : "Oral exam mode, mocniejszy workflow i bardziej premium feeling całej aplikacji."}
         </p>
 
         <Link
-          href="/pricing"
+          href={hydrated && isPro ? "/dashboard" : "/pricing"}
           className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:opacity-90"
         >
-          Zobacz pricing
+          {hydrated && isPro ? "Przejdź do dashboardu" : "Zobacz pricing"}
           <ArrowRight className="h-4 w-4" />
         </Link>
       </section>
