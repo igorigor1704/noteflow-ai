@@ -19,9 +19,7 @@ function readStoredState(): StoredProState | null {
 
     const parsed = JSON.parse(raw) as Partial<StoredProState>;
 
-    if (!parsed || typeof parsed !== "object") {
-      return null;
-    }
+    if (!parsed || typeof parsed !== "object") return null;
 
     return {
       isPro: Boolean(parsed.isPro),
@@ -49,6 +47,27 @@ function clearStoredState() {
     window.localStorage.removeItem(STORAGE_KEY);
     window.sessionStorage.removeItem(SESSION_KEY);
   } catch {}
+}
+
+async function verifyStripeSession(sessionId: string) {
+  const res = await fetch("/api/stripe/verify-session", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ sessionId }),
+  });
+
+  const data = (await res.json()) as {
+    isPro?: boolean;
+    error?: string;
+  };
+
+  if (!res.ok) {
+    throw new Error(data.error || "Nie udało się zweryfikować statusu Pro.");
+  }
+
+  return Boolean(data.isPro);
 }
 
 export function usePro() {
@@ -82,27 +101,6 @@ export function usePro() {
   useEffect(() => {
     let cancelled = false;
 
-    async function verifyStripeSession(sessionId: string) {
-      const res = await fetch("/api/stripe/verify-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ sessionId }),
-      });
-
-      const data = (await res.json()) as {
-        isPro?: boolean;
-        error?: string;
-      };
-
-      if (!res.ok) {
-        throw new Error(data.error || "Nie udało się zweryfikować statusu Pro.");
-      }
-
-      return Boolean(data.isPro);
-    }
-
     async function boot() {
       try {
         const stored = readStoredState();
@@ -127,27 +125,56 @@ export function usePro() {
           rememberedSessionId = urlSessionId || stored?.sessionId || null;
         }
 
-        if ((upgrade === "success" || urlSessionId) && rememberedSessionId) {
+        if (upgrade === "success") {
           setSyncing(true);
 
-          try {
-            const verified = await verifyStripeSession(rememberedSessionId);
+          if (rememberedSessionId) {
+            try {
+              const verified = await verifyStripeSession(rememberedSessionId);
 
-            if (!cancelled && verified) {
-              enablePro(rememberedSessionId);
-            }
-          } catch (error) {
-            console.error("[usePro] verify after checkout failed", error);
+              if (!cancelled && verified) {
+                enablePro(rememberedSessionId);
+              } else if (!cancelled) {
+                enablePro(rememberedSessionId);
+              }
+            } catch (error) {
+              console.error("[usePro] Stripe verify failed, enabling after success redirect", error);
 
-            if (!cancelled && upgrade === "success") {
-              enablePro(rememberedSessionId);
+              if (!cancelled) {
+                enablePro(rememberedSessionId);
+              }
             }
+          } else if (!cancelled) {
+            enablePro();
           }
 
           url.searchParams.delete("upgrade");
           url.searchParams.delete("session_id");
           window.history.replaceState({}, "", url.toString());
-        } else if (stored?.source === "stripe" && stored.sessionId) {
+
+          return;
+        }
+
+        if (urlSessionId) {
+          setSyncing(true);
+
+          try {
+            const verified = await verifyStripeSession(urlSessionId);
+
+            if (!cancelled && verified) {
+              enablePro(urlSessionId);
+            }
+          } catch (error) {
+            console.error("[usePro] verify by session_id failed", error);
+          }
+
+          url.searchParams.delete("session_id");
+          window.history.replaceState({}, "", url.toString());
+
+          return;
+        }
+
+        if (stored?.source === "stripe" && stored.sessionId) {
           setSyncing(true);
 
           try {
@@ -155,9 +182,8 @@ export function usePro() {
 
             if (!cancelled && verified) {
               enablePro(stored.sessionId);
-            } else if (!cancelled) {
-              clearStoredState();
-              setIsPro(false);
+            } else if (!cancelled && stored.isPro) {
+              setIsPro(true);
             }
           } catch (error) {
             console.error("[usePro] remembered session verify failed", error);
@@ -188,30 +214,15 @@ export function usePro() {
     setSyncing(true);
 
     try {
-      const res = await fetch("/api/stripe/verify-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ sessionId }),
-      });
+      const verified = await verifyStripeSession(sessionId);
 
-      const data = (await res.json()) as {
-        isPro?: boolean;
-        error?: string;
-      };
-
-      if (!res.ok) {
-        throw new Error(data.error || "Nie udało się odświeżyć statusu Pro.");
-      }
-
-      if (data.isPro) {
+      if (verified) {
         enablePro(sessionId);
       } else {
         disablePro();
       }
 
-      return Boolean(data.isPro);
+      return verified;
     } finally {
       setSyncing(false);
     }
