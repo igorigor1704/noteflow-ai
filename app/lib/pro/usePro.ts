@@ -56,6 +56,29 @@ export function usePro() {
   const [hydrated, setHydrated] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
+  const enablePro = (sessionId?: string) => {
+    const payload: StoredProState = {
+      isPro: true,
+      source: sessionId ? "stripe" : "local",
+      sessionId,
+      updatedAt: new Date().toISOString(),
+    };
+
+    writeStoredState(payload);
+    setIsPro(true);
+
+    if (sessionId) {
+      try {
+        window.sessionStorage.setItem(SESSION_KEY, sessionId);
+      } catch {}
+    }
+  };
+
+  const disablePro = () => {
+    clearStoredState();
+    setIsPro(false);
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -96,61 +119,51 @@ export function usePro() {
 
         try {
           rememberedSessionId =
-            urlSessionId || window.sessionStorage.getItem(SESSION_KEY);
+            urlSessionId ||
+            window.sessionStorage.getItem(SESSION_KEY) ||
+            stored?.sessionId ||
+            null;
         } catch {
-          rememberedSessionId = urlSessionId;
+          rememberedSessionId = urlSessionId || stored?.sessionId || null;
         }
 
-        if (upgrade === "success" && urlSessionId) {
-          setSyncing(true);
-
-          const verified = await verifyStripeSession(urlSessionId);
-
-          if (!cancelled && verified) {
-            setIsPro(true);
-
-            writeStoredState({
-              isPro: true,
-              source: "stripe",
-              sessionId: urlSessionId,
-              updatedAt: new Date().toISOString(),
-            });
-
-            try {
-              window.sessionStorage.setItem(SESSION_KEY, urlSessionId);
-            } catch {}
-          }
-
-          url.searchParams.delete("upgrade");
-          url.searchParams.delete("session_id");
-          window.history.replaceState({}, "", url.toString());
-        } else if (
-          stored?.source === "stripe" &&
-          stored.sessionId &&
-          rememberedSessionId
-        ) {
+        if ((upgrade === "success" || urlSessionId) && rememberedSessionId) {
           setSyncing(true);
 
           try {
             const verified = await verifyStripeSession(rememberedSessionId);
 
             if (!cancelled && verified) {
-              setIsPro(true);
+              enablePro(rememberedSessionId);
+            }
+          } catch (error) {
+            console.error("[usePro] verify after checkout failed", error);
 
-              writeStoredState({
-                isPro: true,
-                source: "stripe",
-                sessionId: rememberedSessionId,
-                updatedAt: new Date().toISOString(),
-              });
+            if (!cancelled && upgrade === "success") {
+              enablePro(rememberedSessionId);
+            }
+          }
+
+          url.searchParams.delete("upgrade");
+          url.searchParams.delete("session_id");
+          window.history.replaceState({}, "", url.toString());
+        } else if (stored?.source === "stripe" && stored.sessionId) {
+          setSyncing(true);
+
+          try {
+            const verified = await verifyStripeSession(stored.sessionId);
+
+            if (!cancelled && verified) {
+              enablePro(stored.sessionId);
             } else if (!cancelled) {
               clearStoredState();
               setIsPro(false);
             }
-          } catch {
-            if (!cancelled) {
-              clearStoredState();
-              setIsPro(false);
+          } catch (error) {
+            console.error("[usePro] remembered session verify failed", error);
+
+            if (!cancelled && stored.isPro) {
+              setIsPro(true);
             }
           }
         }
@@ -170,29 +183,6 @@ export function usePro() {
       cancelled = true;
     };
   }, []);
-
-  const enablePro = (sessionId?: string) => {
-    const payload: StoredProState = {
-      isPro: true,
-      source: sessionId ? "stripe" : "local",
-      sessionId,
-      updatedAt: new Date().toISOString(),
-    };
-
-    writeStoredState(payload);
-    setIsPro(true);
-
-    if (sessionId) {
-      try {
-        window.sessionStorage.setItem(SESSION_KEY, sessionId);
-      } catch {}
-    }
-  };
-
-  const disablePro = () => {
-    clearStoredState();
-    setIsPro(false);
-  };
 
   const refreshFromStripeSession = async (sessionId: string) => {
     setSyncing(true);
