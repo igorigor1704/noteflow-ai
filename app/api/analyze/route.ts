@@ -102,6 +102,10 @@ const STOPWORDS = new Set([
   "jedno",
 ]);
 
+function makeId() {
+  return crypto.randomUUID();
+}
+
 function sanitizeText(value: string) {
   return value.replace(/\u0000/g, "").replace(/\s+/g, " ").trim();
 }
@@ -139,6 +143,18 @@ function tokenize(rawText: string) {
 
 function isMeaningfulWord(word: string) {
   return word.length >= 4 && !STOPWORDS.has(word) && !/^\d+$/.test(word);
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values.map((v) => v.trim()).filter(Boolean)));
+}
+
+function safeStringArray(value: unknown, limit: number) {
+  if (!Array.isArray(value)) return [];
+
+  return uniqueStrings(
+    value.filter((item): item is string => typeof item === "string")
+  ).slice(0, limit);
 }
 
 function extractConcepts(rawText: string, limit = 8) {
@@ -192,6 +208,7 @@ function extractConcepts(rawText: string, limit = 8) {
 
   for (const word of topSingles) {
     if (merged.length >= limit) break;
+
     if (!merged.some((phrase) => phrase.includes(word))) {
       merged.push(word);
     }
@@ -202,7 +219,7 @@ function extractConcepts(rawText: string, limit = 8) {
 
 function toFlashcard(term: string, definition: string): Flashcard {
   return {
-    id: crypto.randomUUID(),
+    id: makeId(),
     term: term.trim(),
     definition: definition.trim(),
   };
@@ -248,10 +265,6 @@ function shuffle<T>(items: T[]) {
   }
 
   return arr;
-}
-
-function uniqueStrings(values: string[]) {
-  return Array.from(new Set(values.map((v) => v.trim()).filter(Boolean)));
 }
 
 function buildFallbackQuestions(
@@ -379,12 +392,7 @@ function buildFallbackAnalysis(rawText: string): AnalyzeResponse {
     flashcards:
       flashcards.length > 0
         ? flashcards
-        : [
-            toFlashcard(
-              "Temat",
-              "Uzupełnij własne wyjaśnienie materiału."
-            ),
-          ],
+        : [toFlashcard("Temat", "Uzupełnij własne wyjaśnienie materiału.")],
     quiz,
     studyPlan: [
       "Przeczytaj streszczenie i zaznacz fragmenty, których jeszcze nie rozumiesz.",
@@ -394,6 +402,85 @@ function buildFallbackAnalysis(rawText: string): AnalyzeResponse {
       "Po 24 godzinach wróć do materiału i powtórz quiz.",
     ],
   };
+}
+
+function normalizeFlashcards(value: unknown): Flashcard[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+
+      const obj = item as {
+        term?: unknown;
+        definition?: unknown;
+        front?: unknown;
+        back?: unknown;
+      };
+
+      const term =
+        typeof obj.term === "string"
+          ? obj.term.trim()
+          : typeof obj.front === "string"
+            ? obj.front.trim()
+            : "";
+
+      const definition =
+        typeof obj.definition === "string"
+          ? obj.definition.trim()
+          : typeof obj.back === "string"
+            ? obj.back.trim()
+            : "";
+
+      if (!term || !definition) return null;
+
+      return toFlashcard(term, definition);
+    })
+    .filter((item): item is Flashcard => item !== null)
+    .slice(0, 8);
+}
+
+function normalizeQuiz(value: unknown): QuizQuestion[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+
+      const obj = item as {
+        question?: unknown;
+        options?: unknown;
+        correct?: unknown;
+      };
+
+      if (
+        typeof obj.question !== "string" ||
+        !Array.isArray(obj.options) ||
+        typeof obj.correct !== "string"
+      ) {
+        return null;
+      }
+
+      const options = uniqueStrings(
+        obj.options
+          .filter((option): option is string => typeof option === "string")
+          .map((option) => option.trim())
+      ).slice(0, 4);
+
+      if (options.length !== 4) return null;
+
+      const correct = obj.correct.trim();
+
+      if (!options.includes(correct)) return null;
+
+      return {
+        question: obj.question.trim(),
+        options,
+        correct,
+      };
+    })
+    .filter((item): item is QuizQuestion => item !== null)
+    .slice(0, 5);
 }
 
 async function generateWithOpenAI(
@@ -476,176 +563,40 @@ ${text}
   const data = await response.json();
   const content = data?.choices?.[0]?.message?.content;
 
-  if (!content) {
+  if (!content || typeof content !== "string") {
     throw new Error("Brak treści odpowiedzi z OpenAI.");
   }
 
-  const parsed = JSON.parse(content) as Partial<AnalyzeResponse> & {
-    flashcards?: Array<
-      | { term?: unknown; definition?: unknown }
-      | { front?: unknown; back?: unknown }
-    >;
-  };
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+
+  const fallback = buildFallbackAnalysis(text);
 
   const summary =
     typeof parsed.summary === "string" && parsed.summary.trim()
       ? parsed.summary.trim()
-      : "Brak streszczenia.";
+      : fallback.summary;
 
-  const keyTakeaways = Array.isArray(parsed.keyTakeaways)
-    ? parsed.keyTakeaways
-        .filter(
-          (item): item is string =>
-            typeof item === "string" && item.trim().length > 0
-        )
-        .slice(0, 6)
-    : [];
-
-  const concepts = Array.isArray(parsed.concepts)
-    ? parsed.concepts
-        .filter(
-          (item): item is string =>
-            typeof item === "string" && item.trim().length > 0
-        )
-        .slice(0, 8)
-    : [];
-
-  const questions = Array.isArray(parsed.questions)
-    ? parsed.questions
-        .filter(
-          (item): item is string =>
-            typeof item === "string" && item.trim().length > 0
-        )
-        .slice(0, 6)
-    : [];
-
-  const flashcards = Array.isArray(parsed.flashcards)
-    ? parsed.flashcards
-        .map((item) => {
-          if (!item || typeof item !== "object") return null;
-
-          if (
-            "term" in item &&
-            "definition" in item &&
-            typeof item.term === "string" &&
-            typeof item.definition === "string"
-          ) {
-            return toFlashcard(item.term, item.definition);
-          }
-
-          if (
-            "front" in item &&
-            "back" in item &&
-            typeof item.front === "string" &&
-            typeof item.back === "string"
-          ) {
-            return toFlashcard(item.front, item.back);
-          }
-
-          return null;
-        })
-        .filter((item): item is Flashcard => item !== null)
-        .slice(0, 8)
-    : [];
-
-  const quiz = Array.isArray(parsed.quiz)
-    ? parsed.quiz
-        .filter(
-          (item): item is QuizQuestion =>
-            Boolean(
-              item &&
-                typeof item === "object" &&
-                "question" in item &&
-                "options" in item &&
-                "correct" in item &&
-                typeof item.question === "string" &&
-                Array.isArray(item.options) &&
-                item.options.length === 4 &&
-                item.options.every(
-                  (option) =>
-                    typeof option === "string" && option.trim().length > 0
-                ) &&
-                typeof item.correct === "string"
-            )
-        )
-        .map((item) => {
-          const options = item.options.map((option) => option.trim());
-          const correct = options.includes(item.correct.trim())
-            ? item.correct.trim()
-            : options[0];
-
-          return {
-            question: item.question.trim(),
-            options,
-            correct,
-          };
-        })
-        .slice(0, 5)
-    : [];
-
-  const studyPlan = Array.isArray(parsed.studyPlan)
-    ? parsed.studyPlan
-        .filter(
-          (item): item is string =>
-            typeof item === "string" && item.trim().length > 0
-        )
-        .slice(0, 6)
-    : [];
+  const keyTakeaways = safeStringArray(parsed.keyTakeaways, 6);
+  const concepts = safeStringArray(parsed.concepts, 8);
+  const questions = safeStringArray(parsed.questions, 6);
+  const flashcards = normalizeFlashcards(parsed.flashcards);
+  const quiz = normalizeQuiz(parsed.quiz);
+  const studyPlan = safeStringArray(parsed.studyPlan, 6);
 
   return {
     summary,
     keyTakeaways:
-      keyTakeaways.length > 0 ? keyTakeaways : ["Brak kluczowych wniosków."],
-    concepts:
-      concepts.length > 0 ? concepts.map(titleCase) : ["Brak pojęć kluczowych."],
-    questions:
-      questions.length > 0
-        ? questions
-        : ["Jakie są najważniejsze informacje wynikające z materiału?"],
-    flashcards:
-      flashcards.length > 0
-        ? flashcards
-        : [
-            toFlashcard(
-              "Temat",
-              "Uzupełnij własne wyjaśnienie materiału."
-            ),
-          ],
+      keyTakeaways.length > 0 ? keyTakeaways : fallback.keyTakeaways,
+    concepts: concepts.length > 0 ? concepts.map(titleCase) : fallback.concepts,
+    questions: questions.length > 0 ? questions : fallback.questions,
+    flashcards: flashcards.length > 0 ? flashcards : fallback.flashcards,
     quiz:
       quiz.length > 0
         ? quiz
         : buildFallbackQuiz(
-            flashcards.length > 0
-              ? flashcards
-              : [
-                  toFlashcard(
-                    "Temat",
-                    "Najważniejsze pojęcie występujące w materiale."
-                  ),
-                  toFlashcard(
-                    "Zakres",
-                    "Główny zakres tematyczny analizowanego materiału."
-                  ),
-                  toFlashcard(
-                    "Wniosek",
-                    "Najważniejszy wniosek wynikający z treści."
-                  ),
-                  toFlashcard(
-                    "Zastosowanie",
-                    "Praktyczne wykorzystanie omawianego zagadnienia."
-                  ),
-                ]
+            flashcards.length > 0 ? flashcards : fallback.flashcards
           ),
-    studyPlan:
-      studyPlan.length > 0
-        ? studyPlan
-        : [
-            "Przeczytaj streszczenie.",
-            "Powtórz pojęcia.",
-            "Odpowiedz na pytania.",
-            "Przerób fiszki.",
-            "Zrób quiz.",
-          ],
+    studyPlan: studyPlan.length > 0 ? studyPlan : fallback.studyPlan,
   };
 }
 
@@ -654,14 +605,12 @@ export async function GET() {
     ok: true,
     route: "/api/analyze",
     message: "Analyze endpoint is working.",
-    openAiKeyExists: !!process.env.OPENAI_API_KEY,
+    openAiKeyExists: Boolean(process.env.OPENAI_API_KEY),
   });
 }
 
 export async function POST(request: Request) {
   try {
-    console.log("OPENAI KEY EXISTS:", !!process.env.OPENAI_API_KEY);
-
     const body = (await request.json()) as AnalyzePayload;
 
     const rawText =
@@ -714,12 +663,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      id: crypto.randomUUID(),
+      id: makeId(),
       title,
       createdAt: new Date().toISOString(),
       sourceText: rawText,
-      ...analysis,
       weakTopics: [],
+      ...analysis,
     });
   } catch (error) {
     console.error("Analyze route error:", error);
