@@ -45,8 +45,7 @@ function normalizeAnalysisResult(data: unknown): AnalysisResult {
     data && typeof data === "object" ? (data as Record<string, unknown>) : {};
 
   return {
-    summary:
-      typeof source.summary === "string" ? source.summary.trim() : "",
+    summary: typeof source.summary === "string" ? source.summary.trim() : "",
     keyTakeaways: Array.isArray(source.keyTakeaways)
       ? source.keyTakeaways.filter((item): item is string => typeof item === "string")
       : [],
@@ -552,12 +551,38 @@ export function useDashboardState() {
     setResult(null);
 
     try {
-      const text = await file.text();
-      setInputText(text);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/analyze/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = (await res.json()) as {
+        ok?: boolean;
+        text?: string;
+        fileName?: string;
+        characters?: number;
+        error?: string;
+      };
+
+      if (!res.ok || !data.text) {
+        setMessage(data.error || "Nie udało się wczytać pliku.");
+        return;
+      }
+
+      setInputText(data.text);
+
       if (!titleInput.trim()) {
         setTitleInput(file.name.replace(/\.[^/.]+$/, ""));
       }
-      setMessage("Plik został wczytany.");
+
+      setMessage(
+        `Plik został wczytany. Odczytano ${
+          data.characters ?? data.text.length
+        } znaków.`
+      );
     } catch {
       setMessage("Nie udało się wczytać pliku.");
     }
