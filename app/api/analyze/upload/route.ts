@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import mammoth from "mammoth";
-import pdfParse from "pdf-parse";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 
@@ -34,6 +34,12 @@ function normalizeText(text: string) {
 async function readPdf(file: File) {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+
+  const pdfParseModule = await import("pdf-parse");
+  const pdfParse =
+    typeof pdfParseModule.default === "function"
+      ? pdfParseModule.default
+      : (pdfParseModule as any);
 
   const result = await pdfParse(buffer);
 
@@ -90,6 +96,7 @@ export async function POST(req: Request) {
     }
 
     const lowerName = file.name.toLowerCase();
+
     let text = "";
 
     if (file.type === "text/plain" || lowerName.endsWith(".txt")) {

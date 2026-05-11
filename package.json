@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.37",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.20",
