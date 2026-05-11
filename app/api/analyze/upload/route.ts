@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 import mammoth from "mammoth";
+import { createRequire } from "node:module";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const require = createRequire(import.meta.url);
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 
 const DOCX_MIME =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+type PdfParseResult = {
+  text?: string;
+};
 
 function isSupportedFile(file: File) {
   const lowerName = file.name.toLowerCase();
@@ -35,11 +42,9 @@ async function readPdf(file: File) {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  const pdfParseModule = await import("pdf-parse");
-  const pdfParse =
-    typeof pdfParseModule.default === "function"
-      ? pdfParseModule.default
-      : (pdfParseModule as any);
+  const pdfParse = require("pdf-parse/lib/pdf-parse.js") as (
+    dataBuffer: Buffer
+  ) => Promise<PdfParseResult>;
 
   const result = await pdfParse(buffer);
 
@@ -67,10 +72,7 @@ export async function POST(req: Request) {
 
     if (!(file instanceof File)) {
       return NextResponse.json(
-        {
-          ok: false,
-          error: "Brak pliku.",
-        },
+        { ok: false, error: "Brak pliku." },
         { status: 400 }
       );
     }
@@ -96,7 +98,6 @@ export async function POST(req: Request) {
     }
 
     const lowerName = file.name.toLowerCase();
-
     let text = "";
 
     if (file.type === "text/plain" || lowerName.endsWith(".txt")) {
@@ -112,7 +113,7 @@ export async function POST(req: Request) {
         {
           ok: false,
           error:
-            "Nie udało się odczytać tekstu z pliku. Jeśli to PDF ze skanem lub zdjęciem, użyj PDF z prawdziwym tekstem albo wklej tekst ręcznie.",
+            "Nie udało się odczytać tekstu z pliku. Jeśli to skan PDF albo zdjęcie, użyj PDF z prawdziwym tekstem albo wklej tekst ręcznie.",
         },
         { status: 400 }
       );
