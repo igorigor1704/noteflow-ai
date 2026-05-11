@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import mammoth from "mammoth";
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse";
 
 export const runtime = "nodejs";
 
@@ -33,18 +33,11 @@ function normalizeText(text: string) {
 
 async function readPdf(file: File) {
   const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
 
-  const parser = new PDFParse({
-    data: Buffer.from(arrayBuffer),
-  });
+  const result = await pdfParse(buffer);
 
-  try {
-    const result = await parser.getText();
-
-    return normalizeText(result.text ?? "");
-  } finally {
-    await parser.destroy();
-  }
+  return normalizeText(result.text ?? "");
 }
 
 async function readDocx(file: File) {
@@ -97,18 +90,13 @@ export async function POST(req: Request) {
     }
 
     const lowerName = file.name.toLowerCase();
-
     let text = "";
 
     if (file.type === "text/plain" || lowerName.endsWith(".txt")) {
       text = await readTxt(file);
-    }
-
-    if (file.type === "application/pdf" || lowerName.endsWith(".pdf")) {
+    } else if (file.type === "application/pdf" || lowerName.endsWith(".pdf")) {
       text = await readPdf(file);
-    }
-
-    if (file.type === DOCX_MIME || lowerName.endsWith(".docx")) {
+    } else if (file.type === DOCX_MIME || lowerName.endsWith(".docx")) {
       text = await readDocx(file);
     }
 
