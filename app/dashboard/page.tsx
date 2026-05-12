@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   ArrowRight,
   Clock3,
@@ -29,24 +30,25 @@ function StatCard({
   label: string;
   value: string | number;
   helper: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }) {
   return (
-    <div className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+    <div className="nf-stat-card group">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
           {label}
         </p>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-2.5 text-violet-300 shadow-lg shadow-violet-950/20">
           {icon}
         </div>
       </div>
 
-      <p className="mt-4 text-3xl font-black tracking-tight text-slate-950 dark:text-slate-100">
+      <p className="mt-5 text-3xl font-black tracking-tight text-white">
         {value}
       </p>
 
-      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{helper}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-400">{helper}</p>
     </div>
   );
 }
@@ -108,7 +110,9 @@ export default function DashboardPage() {
   };
 
   const safeHistory = Array.isArray(dashboard.history) ? dashboard.history : [];
-  const safeDueCards = Array.isArray(dashboard.dueCards) ? dashboard.dueCards : [];
+  const safeDueCards = Array.isArray(dashboard.dueCards)
+    ? dashboard.dueCards
+    : [];
   const safeFolders = Array.isArray(dashboard.folders) ? dashboard.folders : [];
   const safeAvailableTags = Array.isArray(dashboard.availableTags)
     ? dashboard.availableTags
@@ -128,16 +132,12 @@ export default function DashboardPage() {
   if (!mounted) {
     return (
       <main className="space-y-6">
-        <div className="h-40 animate-pulse rounded-[30px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" />
+        <div className="h-44 animate-pulse rounded-[32px] border border-white/10 bg-white/5" />
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="h-36 animate-pulse rounded-[26px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" />
-          <div className="h-36 animate-pulse rounded-[26px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" />
-          <div className="h-36 animate-pulse rounded-[26px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" />
-          <div className="h-36 animate-pulse rounded-[26px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" />
-        </div>
-        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="h-80 animate-pulse rounded-[28px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" />
-          <div className="h-80 animate-pulse rounded-[28px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" />
+          <div className="h-36 animate-pulse rounded-[28px] border border-white/10 bg-white/5" />
+          <div className="h-36 animate-pulse rounded-[28px] border border-white/10 bg-white/5" />
+          <div className="h-36 animate-pulse rounded-[28px] border border-white/10 bg-white/5" />
+          <div className="h-36 animate-pulse rounded-[28px] border border-white/10 bg-white/5" />
         </div>
       </main>
     );
@@ -152,28 +152,34 @@ export default function DashboardPage() {
         onSubmit={dashboard.completeOnboarding}
       />
 
-      <main className="space-y-6">
-        <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="border-b border-slate-200 px-6 py-6 dark:border-slate-800 md:px-8 md:py-8">
-            <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+      <main className="space-y-6 pb-10">
+        <section className="premium-border relative overflow-hidden rounded-[34px] border border-white/10 bg-slate-950/70 shadow-2xl shadow-black/30 backdrop-blur-xl">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-violet-600/20 blur-3xl" />
+            <div className="absolute left-1/3 top-0 h-60 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
+          </div>
+
+          <div className="relative px-6 py-7 md:px-8 md:py-9">
+            <div className="flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
               <div className="max-w-3xl">
-                <div className="mb-4 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
+                <div className="mb-5 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-violet-200">
                     Dashboard
                   </span>
-                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                    premium workspace
+                  <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-100">
+                    AI study workspace
                   </span>
                 </div>
 
-                <h1 className="text-3xl font-black tracking-tight text-slate-950 dark:text-slate-100 md:text-4xl">
-                  Zamień materiały w uporządkowany system nauki
+                <h1 className="nf-gradient-text text-3xl font-black tracking-tight md:text-5xl">
+                  Zamień materiały w system nauki, który wygląda i działa jak
+                  premium SaaS.
                 </h1>
 
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  Najpierw dodajesz materiał. Potem dostajesz analizę, fiszki,
-                  pytania i plan pracy. Na końcu wracasz do historii i powtórek
-                  bez chaosu.
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
+                  Dodaj PDF, DOCX albo notatki. NoteFlow wygeneruje
+                  streszczenie, fiszki, quiz, pytania i plan nauki — bez chaosu.
                 </p>
               </div>
 
@@ -181,7 +187,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={dashboard.analyzeText}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 dark:bg-white dark:text-slate-950"
+                  className="nf-button-primary"
                 >
                   Analizuj materiał
                   <ArrowRight className="h-4 w-4" />
@@ -190,7 +196,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={handleLoadDemo}
-                  className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                  className="nf-button-secondary"
                 >
                   Załaduj demo
                 </button>
@@ -203,48 +209,36 @@ export default function DashboardPage() {
                       block: "start",
                     })
                   }
-                  className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                  className="nf-button-secondary"
                 >
                   Przejdź do wyniku
                 </button>
 
-                <Link
-                  href="/dashboard/library"
-                  className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                >
-                  Otwórz library
+                <Link href="/dashboard/library" className="nf-button-secondary">
+                  Library
                 </Link>
               </div>
             </div>
           </div>
 
-          <div className="grid gap-4 px-6 py-6 md:grid-cols-3 md:px-8">
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Flow 01
-              </p>
-              <p className="mt-2 text-base font-bold text-slate-950 dark:text-slate-100">
-                Dodaj notatki, PDF albo materiał do nauki
-              </p>
-            </div>
-
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Flow 02
-              </p>
-              <p className="mt-2 text-base font-bold text-slate-950 dark:text-slate-100">
-                Odbierz wynik, fiszki, quiz i plan nauki
-              </p>
-            </div>
-
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Flow 03
-              </p>
-              <p className="mt-2 text-base font-bold text-slate-950 dark:text-slate-100">
-                Wróć do historii i przerabiaj tylko to, co ważne
-              </p>
-            </div>
+          <div className="relative grid gap-4 border-t border-white/10 px-6 py-6 md:grid-cols-3 md:px-8">
+            {[
+              ["Flow 01", "Dodaj PDF, DOCX albo tekst do analizy"],
+              ["Flow 02", "Odbierz wynik, fiszki, quiz i plan nauki"],
+              ["Flow 03", "Wracaj do historii i powtórek bez chaosu"],
+            ].map(([label, text]) => (
+              <div
+                key={label}
+                className="rounded-[26px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl transition hover:-translate-y-1 hover:border-violet-400/30 hover:bg-white/[0.06]"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">
+                  {label}
+                </p>
+                <p className="mt-3 text-base font-bold leading-6 text-white">
+                  {text}
+                </p>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -280,7 +274,7 @@ export default function DashboardPage() {
 
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="space-y-6">
-            <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <section className="nf-panel rounded-[32px] p-4">
               <MaterialInputPanel
                 titleInput={dashboard.titleInput}
                 tagsInput={dashboard.tagsInput}
@@ -306,16 +300,13 @@ export default function DashboardPage() {
               />
             </section>
 
-            <section
-              ref={resultRef}
-              className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-            >
-              <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <section ref={resultRef} className="nf-panel rounded-[32px] p-5">
+              <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">
                     Analysis result
                   </p>
-                  <h3 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-100">
+                  <h3 className="mt-2 text-2xl font-black tracking-tight text-white">
                     Wynik analizy
                   </h3>
                 </div>
@@ -328,7 +319,7 @@ export default function DashboardPage() {
                       block: "start",
                     })
                   }
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                  className="nf-button-secondary"
                 >
                   <Library className="h-4 w-4" />
                   Historia
@@ -357,10 +348,12 @@ export default function DashboardPage() {
                   onPrevFlashcard={() => dashboard.changeFlashcard("prev")}
                   onNextFlashcard={() => dashboard.changeFlashcard("next")}
                   onSetSelectedAnswer={(questionIndex: number, value: string) =>
-                    dashboard.setSelectedAnswers((prev: Record<number, string>) => ({
-                      ...prev,
-                      [questionIndex]: value,
-                    }))
+                    dashboard.setSelectedAnswers(
+                      (prev: Record<number, string>) => ({
+                        ...prev,
+                        [questionIndex]: value,
+                      })
+                    )
                   }
                   onToggleShowAnswers={() =>
                     dashboard.setShowAnswers((prev: boolean) => !prev)
@@ -369,18 +362,18 @@ export default function DashboardPage() {
                   onResetQuiz={dashboard.resetQuiz}
                 />
               ) : (
-                <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-10 text-center dark:border-slate-700 dark:bg-slate-950">
-                  <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                <div className="rounded-[28px] border border-dashed border-white/15 bg-white/[0.03] p-10 text-center">
+                  <h4 className="text-lg font-semibold text-white">
                     Tu pojawi się wynik analizy
                   </h4>
-                  <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  <p className="mt-2 text-sm leading-7 text-slate-400">
                     Dodaj tekst albo plik i kliknij analizę.
                   </p>
                 </div>
               )}
             </section>
 
-            <div ref={historyRef}>
+            <div ref={historyRef} className="nf-panel rounded-[32px] p-4">
               <HistoryPanel
                 historySearch={dashboard.historySearch}
                 onlyFavorites={dashboard.onlyFavorites}
@@ -401,81 +394,83 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-6">
-            <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <section className="nf-panel rounded-[32px] p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">
                 Workspace status
               </p>
-              <h3 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-100">
+              <h3 className="mt-3 text-2xl font-black tracking-tight text-white">
                 Ucz się w jednym miejscu
               </h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                Ten panel ma trzymać rytm pracy: wynik analizy, cele, powtórki i
+              <p className="mt-3 text-sm leading-7 text-slate-400">
+                Ten panel trzyma rytm pracy: wynik analizy, cele, powtórki i
                 historia bez przełączania się między chaotycznymi ekranami.
               </p>
 
-              <div className="mt-5 grid gap-3">
-                <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <div className="mt-6 grid gap-3">
+                <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                  <p className="text-sm font-semibold text-white">
                     Analizy zapisane
                   </p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  <p className="mt-1 text-sm text-slate-400">
                     {safeHistory.length} materiałów w historii.
                   </p>
                 </div>
 
-                <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                  <p className="text-sm font-semibold text-white">
                     Powtórki na dziś
                   </p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  <p className="mt-1 text-sm text-slate-400">
                     {safeDueCards.length} kart gotowych do przerobienia.
                   </p>
                 </div>
 
-                <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Gotowość
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                  <p className="text-sm font-semibold text-white">Gotowość</p>
+                  <p className="mt-1 text-sm text-slate-400">
                     Ready score: {dashboard.readyScore}%.
                   </p>
                 </div>
               </div>
             </section>
 
-            <StudyGoalsCard
-              preferences={dashboard.preferences}
-              todayMinutes={dashboard.stats.todayMinutes}
-              currentStreak={dashboard.stats.streak}
-              onUpdate={dashboard.updatePreferences}
-            />
+            <div className="nf-panel rounded-[32px] p-4">
+              <StudyGoalsCard
+                preferences={dashboard.preferences}
+                todayMinutes={dashboard.stats.todayMinutes}
+                currentStreak={dashboard.stats.streak}
+                onUpdate={dashboard.updatePreferences}
+              />
+            </div>
 
-            <SpacedRepetitionPanel
-              dueCards={safeDueCards}
-              dueCardsCount={safeDueCards.length}
-              spacedIndex={dashboard.spacedIndex}
-              currentCard={currentSpacedCard}
-              showSpacedBack={dashboard.showSpacedBack}
-              showBack={dashboard.showSpacedBack}
-              onPrev={() =>
-                dashboard.setSpacedIndex((prev: number) =>
-                  prev <= 0 ? Math.max(safeDueCards.length - 1, 0) : prev - 1
-                )
-              }
-              onNext={() =>
-                dashboard.setSpacedIndex((prev: number) =>
-                  safeDueCards.length <= 1
-                    ? 0
-                    : prev >= safeDueCards.length - 1
-                    ? 0
-                    : prev + 1
-                )
-              }
-              onToggleBack={() =>
-                dashboard.setShowSpacedBack((prev: boolean) => !prev)
-              }
-              onReview={dashboard.reviewCurrentSpacedCard}
-            />
+            <div className="nf-panel rounded-[32px] p-4">
+              <SpacedRepetitionPanel
+                dueCards={safeDueCards}
+                dueCardsCount={safeDueCards.length}
+                spacedIndex={dashboard.spacedIndex}
+                currentCard={currentSpacedCard}
+                showSpacedBack={dashboard.showSpacedBack}
+                showBack={dashboard.showSpacedBack}
+                onPrev={() =>
+                  dashboard.setSpacedIndex((prev: number) =>
+                    prev <= 0 ? Math.max(safeDueCards.length - 1, 0) : prev - 1
+                  )
+                }
+                onNext={() =>
+                  dashboard.setSpacedIndex((prev: number) =>
+                    safeDueCards.length <= 1
+                      ? 0
+                      : prev >= safeDueCards.length - 1
+                      ? 0
+                      : prev + 1
+                  )
+                }
+                onToggleBack={() =>
+                  dashboard.setShowSpacedBack((prev: boolean) => !prev)
+                }
+                onReview={dashboard.reviewCurrentSpacedCard}
+              />
+            </div>
           </div>
         </div>
       </main>
